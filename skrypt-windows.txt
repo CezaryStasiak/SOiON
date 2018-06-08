@@ -1,0 +1,96 @@
+'Cezary Stasiak B3
+
+Set objShell = WScript.CreateObject("WScript.Shell")
+
+Set list = CreateObject("System.Collections.ArrayList")
+
+Set objShellExec = objShell.Exec("netsh interface show interface")
+interfaces = objShellExec.StdOut.ReadAll
+interfaces2 = split(interfaces, vbCrLf)
+
+For i=3 to UBound(interfaces2) step 1
+	fullName = Trim(Mid(interfaces2(i), 48))
+	If Len(fullName) > 0 then
+		list.Add fullName 
+	End If
+Next
+
+interfaceList=""
+
+For i=0 to list.Count-1 step 1
+	interfaceList = interfaceList + " " & i & " - " & list(i)
+Next
+
+Dim pom
+Dim input
+input = InputBox("Wybierz urzadzenie sieciowe:"&vbCrLf&interfaceList)
+If IsNumeric(input) then
+	If ((CInt(input)>=0) And (CInt(input)<list.Count)) then
+		pom = list(input)
+	Else
+		MsgBox ("Podane urzadzenie nie istnieje")
+		Wscript.Quit
+	End If
+Else
+	MsgBox ("Prosze wpisac numer urzadzenia")
+	Wscript.Quit
+End If
+
+Dim ipStatOk
+ipStat = InputBox("Wpisz rodzaj ip: static lub dhcp")
+ipStat2 = Trim(ipStat)
+
+If ipStat2 = "dhcp" then
+	ipStatOk=true
+ElseIf ipStat2 = "static" then
+	ipStatOk=true
+Else
+	ipStatOk=false
+End If
+
+If ipStatOk=false then
+	MsgBox("Rodzaj ip jest niepoprawny")
+	Wscript.Quit
+End If
+
+Dim isValid
+Public Function sprawdzIp (ip)
+	isValid = true
+	ipSplit=split(ip,".")
+	If Not UBound(ipSplit)=3 then
+		isValid=false
+	End If
+	For i=0 to 3 step 1
+		If ipSplit(i)<0 Or ipSplit(i)>255 then
+		isValid=false
+		End If
+	Next
+	If isValid then
+	sprawdzIp=true
+	Else
+	sprawdzIp=false
+	End If
+End Function
+
+Dim ipOk
+Dim maskaOk
+Dim bramkaOk
+
+inputIp = InputBox("Wpisz adress ip")
+inputTrim = Trim(inputIp)
+ipOk = sprawdzIp(inputTrim)
+
+inputMaska = InputBox("Wpisz maske sieci")
+inputTrim = Trim(inputMaska)
+maskaOk = sprawdzIp(inputTrim)
+
+inputBramka = InputBox("Wpisz bramke domyslna")
+inputTrim = Trim(inputBramka)
+bramkaOk = sprawdzIp(inputTrim)
+
+If ipOk And maskaOk And bramkaOk then
+Set objShellExec = objShell.Exec("netsh interface ip set address """&pom&""" "&ipStat2&" "&inputIp&" "&inputMaska&" "&inputBramka) 
+MsgBox(polecenie)
+Else
+MsgBox("Cos poszlo nie tak, sprobuj ponownie")
+End If
